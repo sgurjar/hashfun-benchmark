@@ -1,6 +1,6 @@
 import os, os.path, subprocess, platform
 
-basedir='C:\\books3\\unh\\hash-benchmark'
+basedir=os.path.dirname(os.path.realpath(__file__))
 datadir=os.path.join(basedir,'data')
 srcdir =os.path.join(basedir,'source')
 
