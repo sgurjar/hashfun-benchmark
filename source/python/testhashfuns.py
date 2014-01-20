@@ -26,6 +26,6 @@ for i in range(warmupCount):
 
 for i in range(repeatCount):
     start = time.clock()
-    hashfun(data).digest()
+    digest = hashfun(data).hexdigest()
     end = time.clock()
-    print i,int((end-start)*1000)
+    print i, digest, int((end-start)*1000)
