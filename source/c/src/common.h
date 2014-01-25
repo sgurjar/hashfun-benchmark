@@ -15,7 +15,12 @@
 /* ---------------------------------------------------------------------------
  * supported hash algorithms
  */
-typedef enum { MD5 = 0, SHA1, SHA256, SHA512 } hashalg_t;
+extern const char* SUPPORTED_ALGOS[N_ALGS];
+
+/* ---------------------------------------------------------------------------
+ * returns non-zero if 'alog' is in SUPPORTED_ALGOS otherwise zero.
+ */
+int is_valid_hash_algo(const char* algo);
 
 /* ---------------------------------------------------------------------------
  * returns non-zero if str contains all digits, otherwise 0
@@ -30,9 +35,9 @@ int isnumber(const char* str);
  *
  * NOTE: caller of this function must free the returned buffer.
  */
-unsigned char* readfile(
-        const char* filename,  /* name of the file to read data from */
-        size_t*     filesize); /* size of the returned buffer */
+unsigned char* readfile(const char* filename, size_t* filesize);
+/* size of the returned buffer */
+/* name of the file to read data from */
 
 /* ---------------------------------------------------------------------------
  * prints hex encoded string value of the buffer

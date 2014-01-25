@@ -5,9 +5,34 @@
  */
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
+#include <string.h>
+
+#include "common.h"
+
+
+/* ---------------------------------------------------------------------------
+ * hash algorithms supported for test
+ */
+const char* SUPPORTED_ALGOS[N_ALGS] = { "md5", "sha1", "sha256", "sha512" };
+
+/* ---------------------------------------------------------------------------
+ * returns non-zero if 'alog' is in SUPPORTED_ALGOS otherwise zero.
+ */
+int is_valid_hash_algo(const char* algo)
+{
+    size_t i;
+
+    for (i = 0; i < N_ALGS; i++) {
+        if (strcmp(SUPPORTED_ALGOS[i], algo)) {
+            return 1;
+        }
+    }
+
+    return 0;
+}
 
 /*
  ---------------------------------------------------------------------------

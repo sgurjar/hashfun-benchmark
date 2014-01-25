@@ -7,6 +7,10 @@
 
 #include <stdio.h>
 #include <time.h>
+#include <windows.h>
+#include <wincrypt.h>
+
+#include "common.h"
 #include "testwin32crypto.h"
 
 /*
@@ -15,19 +19,15 @@
  http://msdn.microsoft.com/en-us/library/windows/desktop/aa375549.aspx
  --------------------------------------------------------------------------
  */
-ALG_ID _getalgid(hashalg_t algo)
+ALG_ID _getalgid(const char* algo)
 {
-    switch (algo) {
-    case MD5:
-        return CALG_MD5;
-    case SHA1:
-        return CALG_SHA1;
-    case SHA256:
-        return CALG_SHA_256;
-    case SHA512:
-        return CALG_SHA_512;
-    default:
-        fatal("invalid hash algo %d", algo);
+    if (strcmp(algo, "md5"   )) return CALG_MD5     ; else
+    if (strcmp(algo, "sha1"  )) return CALG_SHA1    ; else
+    if (strcmp(algo, "sha256")) return CALG_SHA_256 ; else
+    if (strcmp(algo, "sha512")) return CALG_SHA_512 ;
+
+    else {
+        fatal("invalid hash algo '%s'", algo);
         return 0;
     }
 }
@@ -104,7 +104,7 @@ float _compute_digest(HCRYPTPROV prov, ALG_ID algid, const unsigned char* data,
   loops for warmcount and repeatecount and compute hash
   --------------------------------------------------------------------------
  */
-int win32crypto_digest(hashalg_t algo, const unsigned char* data, size_t datalen,
+int win32crypto_digest(const char* algo, const unsigned char* data, size_t datalen,
         size_t repeatcount, size_t warmupcount)
 {
     ALG_ID     algid  = 0;

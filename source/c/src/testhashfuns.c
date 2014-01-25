@@ -17,6 +17,10 @@
 #include "testwin32crypto.h"
 #endif
 
+#ifdef USE_OPENSSL
+#include "testopenssl.h"
+#endif
+
 
 /*
  --------------------------------------------------------------------------
@@ -25,11 +29,8 @@
  */
 int main(int argc, char* argv[])
 {
-    const char* const supported_algos[N_ALGS] = { "md5", "sha1", "sha256", "sha512" };
     size_t repeatcount = 0, warmupcount = 0;
-    size_t i = 0;
-    hashalg_t input_hashalg = -1;
-    const char* filename;
+    const char *filename, *algo;
 
     if (argc != 5) {
         printf("usage: %s repeatcount warmupcount algo filename\n", argv[0]);
@@ -51,17 +52,16 @@ int main(int argc, char* argv[])
     warmupcount = atoi(argv[2]);
 
     /* 3 hashalgo */
-    for (i = 0; i < N_ALGS; i++) {
-        if (0 == strcmp(supported_algos[i], argv[3])) input_hashalg = i;
+    algo = argv[3];
+    if (!is_valid_hash_algo(algo)) {
+        return fatal("third argument algorithm is invalid, %s", algo);
     }
-    if (input_hashalg < 0)
-        return fatal("third argument algorithm is invalid, %s", argv[3]);
 
     /* 4 filename */
     filename = argv[4];
 
     /* compute digest */
-    digest_file(input_hashalg, filename, repeatcount, warmupcount);
+    digest_file(algo, filename, repeatcount, warmupcount);
 
     return 0;
 }
@@ -71,7 +71,7 @@ int main(int argc, char* argv[])
  function computes hash digest of the data read from filename
  --------------------------------------------------------------------------
  */
-void digest_file(hashalg_t algo, const char* filename, size_t repeatcount,
+void digest_file(const char* algo, const char* filename, size_t repeatcount,
         size_t warmupcount)
 {
     unsigned char* data;
@@ -87,11 +87,13 @@ void digest_file(hashalg_t algo, const char* filename, size_t repeatcount,
 /* ---------------------------------------------------------------------------
  * function computes hash digest
  */
-void digest(hashalg_t algo, const unsigned char* data, size_t datalen,
+void digest(const char* algo, const unsigned char* data, size_t datalen,
         size_t repeatcount, size_t warmupcount)
 {
 #ifdef USE_WINCRYPTO
     win32crypto_digest(algo, data, datalen, repeatcount, warmupcount);
+#elif USE_OPENSSL
+    openssl_digest(algo, data, datalen, repeatcount, warmupcount);
 #else
     fatal("not implemented, define appropriate macro to choose implementation");
 #endif

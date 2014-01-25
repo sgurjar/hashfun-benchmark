@@ -11,10 +11,24 @@
 
 @if not exist build\ mkdir build
 
+@rem cl.exe ^
+@rem   /W4 ^
+@rem   /Fobuild\ ^
+@rem   /O1 ^
+@rem   /DUSE_WINCRYPTO ^
+@rem   src\common.c src\testhashfuns.c src\testwin32crypto.c ^
+@rem   /link advapi32.lib crypt32.lib /OUT:testhashfuns_win32crypto.exe
+
+@rem rmdir build\*
+
+@rem include openssl headers
+@rem set INCLUDE=%INCLUDE%;c:\tools\openssl\openssl-1.0.0l\inc32;
+
 @cl.exe ^
-  /W4 ^
-  /Fobuild\ ^
-  /O1 ^
-  /DUSE_WINCRYPTO ^
-  src\*.c ^
-  /link advapi32.lib crypt32.lib /OUT:testhashfuns_win32crypto.exe
+ /W4 ^
+ /Fobuild\ ^
+ /O1 ^
+ /DUSE_OPENSSL ^
+ src\common.c src\testhashfuns.c src\testopenssl.c ^
+ /link advapi32.lib user32.lib gdi32.lib c:\tools\openssl\openssl-1.0.0l\out32\libeay32.lib ^
+ /OUT:testhashfuns_openssl.exe

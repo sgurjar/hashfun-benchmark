@@ -1,17 +1,18 @@
-import os, os.path, subprocess, platform
+import sys, os, os.path, subprocess, platform
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 DATADIR = os.path.join(BASEDIR,'data')
 SRCDIR  = os.path.join(BASEDIR,'source')
 
-JAVA_CMD    = 'c:/tools/jdk/jdk1.7.0_25/bin/java.exe'
-PYTHON_CMD  = 'c:/tools/python/Python275/python.exe'
-PERL_CMD    = 'c:/tools/perl/strawberry/perl/bin/perl.exe'
+JAVA_CMD   = 'c:/tools/jdk/jdk1.7.0_25/bin/java.exe'
+PYTHON_CMD = 'c:/tools/python/Python275/python.exe'
+PERL_CMD   = 'c:/tools/perl/strawberry/perl/bin/perl.exe'
+RUBY_CMD   = 'c:/tools/ruby/ruby-2.0.0-p353-i386-mingw32/bin/ruby.exe'
 
-REPEAT_COUNT    = '1'
-WARMPUP_COUNT   = '1'
+REPEAT_COUNT    = '10'
+WARMPUP_COUNT   = '2'
 
-HASH_ALGORITHMS = ('md5','sha1','sha256','sha512')
+HASH_ALGORITHMS = ('md5', 'sha1', 'sha256', 'sha512')
 
 DATAFILES       = filter(lambda x: x.endswith('.dat'), os.listdir(DATADIR))
 
@@ -49,7 +50,7 @@ def runtest(**kwargs):
                         kwargs['getargs'](algo, datafile)).splitlines():
                     print kwargs['prefix'], algo, datafile, line
             except subprocess.CalledProcessError as e:
-                print e.retcode, e.cmd, e.output
+                print e.cmd, e.output
 
 #----------------------
 def runjava(java_cmd, repeat_count, warmpup_count):
@@ -117,19 +118,126 @@ def runperl(perl_cmd, repeat_count, warmpup_count):
     runtest(prefix='perl', getargs=getargs)
 
 #----------------------
+def runruby(ruby_cmd, repeat_count, warmpup_count):
+    def getargs(algo, datafile):
+        return [ ruby_cmd,
+                 'source/ruby/testhashfuns.rb',
+                 repeat_count,
+                 warmpup_count,
+                 algo,
+                 os.path.join(DATADIR,datafile)
+               ]
+
+    runtest(prefix='ruby', getargs=getargs)
+
+#----------------------
+def verify_digest():
+    a={}
+    for line in sys.stdin.readlines():
+        #print line.strip()
+        if not line.startswith('##'):
+            (lang, algo, datafile, index, digest, elapsed) = line.split()
+            a.setdefault(lang + '-' + algo + '-' + datafile, []).append(digest)
+
+    b={}
+    for k in sorted(a.keys()):
+        (lang, algo, data) = k.split('-')
+        if (algo+'-'+data) in b:
+            if b[algo+'-'+data] != a[k]:
+                print "digest mismatch: %s %s %s" % (lang, algo, data)
+                print "actual   %s" % a[k]
+                print "expected %s" % b[algo+'-'+data]
+                return
+        else:
+            b[algo+'-'+data] = a[k]
+
+"""
+def analyze_this():
+    import itertools
+
+    header = ('lang','algo','datafile','rindex','digest','elapsed')
+
+    data = sys.stdin.readlines()
+    data = itertools.ifilter(lambda x: x and not x.startswith('#'), data)
+    data = itertools.imap(lambda x: dict(zip(header, x.split())), data)
+    grp_by_lang_algo_data = itertools.groupby(
+                    data, key=lambda x:x['lang']+'-'+x['algo']+'-'+x['datafile'])
+
+    # from repeatcount runs find the one that took min elapsed time
+    grp_by_lang_algo_data_minelapsed = itertools.imap (
+       lambda (a,b) : min( b, key=lambda x: int(x['elapsed']) ),
+       grp_by_lang_algo_data )
+
+    plot(itertools.ifilter(lambda x: x['lang']=='ruby',
+                            grp_by_lang_algo_data_minelapsed))
+
+
+def plot(data):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import itertools, re
+
+    data = list(data)
+
+    md5 = filter(lambda x: x['algo']=='md5', data)
+    dtf = map(lambda x: re.sub(r'\.dat$','',re.sub(r'^0*','',x)),
+                            map(lambda x:x['datafile'], md5))
+
+    etm = map(lambda x:int(x['elapsed']), md5)
+    ind = np.arange(len(etm))
+    width = 0.35
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(ind, etm, width, color='r') # , yerr=menStd
+
+    #---------
+    sha1 = filter(lambda x: x['algo']=='sha1', data)
+    dtf = map(lambda x: re.sub(r'\.dat$','',re.sub(r'^0*','',x)),
+                            map(lambda x:x['datafile'], sha1))
+
+    etm = map(lambda x:int(x['elapsed']), sha1)
+    ind = np.arange(len(etm)) + width
+    rects2 = ax.bar(ind, etm, width, color='y') # , yerr=menStd
+
+    #---------
+    sha256 = filter(lambda x: x['algo']=='sha256', data)
+    dtf = map(lambda x: re.sub(r'\.dat$','',re.sub(r'^0*','',x)),
+                            map(lambda x:x['datafile'], sha256))
+
+    etm = map(lambda x:int(x['elapsed']), sha256)
+    ind = np.arange(len(etm)) + width + width
+    rects3 = ax.bar(ind, etm, width, color='b') # , yerr=menStd
+
+    ax.set_ylabel('Milliseconds')
+    ax.set_title('Ruby')
+    ax.set_xticks(ind + width + width)
+    ax.set_xticklabels(dtf)
+
+    #ax.legend( (rects1[0], rects2[0]), ('Men', 'Women') )
+
+    plt.show()
+
+"""
+
+#----------------------
 def main():
     platform_info()
     cs_exe = 'source/c#/testhashfuns_cs.exe'
     c_wincrypto_exe = 'source/c/testhashfuns_win32crypto.exe'
 
-    #runjava     (JAVA_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
-    #runpython   (PYTHON_CMD     , REPEAT_COUNT, WARMPUP_COUNT)
-    #runcsharp   (cs_exe         , REPEAT_COUNT, WARMPUP_COUNT)
-    #runwincrypto(c_wincrypto_exe, REPEAT_COUNT, WARMPUP_COUNT)
+    runjava     (JAVA_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
+    runpython   (PYTHON_CMD     , REPEAT_COUNT, WARMPUP_COUNT)
+    runcsharp   (cs_exe         , REPEAT_COUNT, WARMPUP_COUNT)
+    runwincrypto(c_wincrypto_exe, REPEAT_COUNT, WARMPUP_COUNT)
     runperl     (PERL_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
+    runruby     (RUBY_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
 
 #----------------------
 # MAIN
 #----------------------
 if __name__=="__main__":
-    main()
+    if len(sys.argv) > 1:
+        if sys.argv[1]=='-v': verify_digest()
+        #elif sys.argv[1]=='-a': analyze_this()
+    else:
+        main()
