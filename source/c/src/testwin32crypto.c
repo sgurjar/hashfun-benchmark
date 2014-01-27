@@ -6,6 +6,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <time.h>
 #include <windows.h>
 #include <wincrypt.h>
@@ -21,14 +22,23 @@
  */
 ALG_ID _getalgid(const char* algo)
 {
-    if (strcmp(algo, "md5"   )) return CALG_MD5     ; else
-    if (strcmp(algo, "sha1"  )) return CALG_SHA1    ; else
-    if (strcmp(algo, "sha256")) return CALG_SHA_256 ; else
-    if (strcmp(algo, "sha512")) return CALG_SHA_512 ;
+    if (0==strcmp(algo, "md5"   )) return CALG_MD5     ; else
+    if (0==strcmp(algo, "sha1"  )) return CALG_SHA1    ; else
+    if (0==strcmp(algo, "sha256")) return CALG_SHA_256 ; else
+    if (0==strcmp(algo, "sha512")) return CALG_SHA_512 ;
 
     else {
         fatal("invalid hash algo '%s'", algo);
         return 0;
+    }
+}
+const char* _stralgid(ALG_ID id) {
+    switch(id) {
+    case CALG_MD5    : return "MD5";
+    case CALG_SHA1   : return "SHA1";
+    case CALG_SHA_256: return "SHA_256";
+    case CALG_SHA_512: return "SHA_512";
+    default: return "INVALID";
     }
 }
 
@@ -132,6 +142,7 @@ int win32crypto_digest(const char* algo, const unsigned char* data, size_t datal
         printf("%d ", i);
         elapsed = _compute_digest(prov, algid, data, datalen, 1);
         if (elapsed < 0.0F) goto cleanup;
+        /*printf(" %d %s\n", (int) elapsed, _stralgid(algid));*/
         printf(" %d\n", (int) elapsed);
     }
 

@@ -51,7 +51,7 @@ namespace TestHashFuns
 
         Stopwatch stopwatch = new Stopwatch();
         for (int i = 0; i < repeatcount; i++) { // actual micro benchmarked run
-            stopwatch.Start();
+            stopwatch.Restart();
             hash = algo.ComputeHash(data);
             stopwatch.Stop();
             Console.WriteLine("{0} {1} {2}", i,

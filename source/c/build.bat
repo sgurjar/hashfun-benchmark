@@ -1,34 +1,70 @@
 @rem call it once to setup env to build
-@rem call c:\tools\MicrosoftVisualStudio10.0\VC\bin\vcvars32.bat
+@rem call c:\tools\MicrosoftVisualStudio10.0\VC\vcvarsall.bat
 
-@rem ===========================================================================
-@rem define USE_WINCRYPTO macro if compiling using Windows CryptoAPI
-@rem    http://msdn.microsoft.com/en-us/library/windows/desktop/aa380256
-@rem define macro to use USE_WINCRYPTO win32 crypto api   /DUSE_WINCRYPTO
-@rem ===========================================================================
+@if not exist build_wincrypto\ (
+  mkdir build_wincrypto
+) else (
+  del /q build_wincrypto\*
+)
+@if not exist build_openssl\ (
+  mkdir build_openssl
+) else (
+  del /q build_openssl\*
+)
 
-@rem c:\tools\MicrosoftVisualStudio10.0\VC\bin\cl.exe
+cl.exe ^
+/nologo ^
+/MT ^
+/Ox ^
+/O2 ^
+/Ob2 ^
+/W3 ^
+/WX ^
+/Gs0 ^
+/GF ^
+/Gy ^
+/Fobuild_wincrypto\ ^
+/DUSE_WINCRYPTO ^
+/DWIN32_LEAN_AND_MEAN ^
+/D_CRT_SECURE_NO_DEPRECATE ^
+-c ^
+src\common.c src\testhashfuns.c src\testwin32crypto.c
 
-@if not exist build\ mkdir build
+@if %ERRORLEVEL% GTR 0 goto :eof
 
-@rem cl.exe ^
-@rem   /W4 ^
-@rem   /Fobuild\ ^
-@rem   /O1 ^
-@rem   /DUSE_WINCRYPTO ^
-@rem   src\common.c src\testhashfuns.c src\testwin32crypto.c ^
-@rem   /link advapi32.lib crypt32.lib /OUT:testhashfuns_win32crypto.exe
+link.exe ^
+/nologo ^
+/opt:ref ^
+advapi32.lib crypt32.lib ^
+/OUT:testhashfuns_win32crypto.exe ^
+build_wincrypto\common.obj build_wincrypto\testhashfuns.obj build_wincrypto\testwin32crypto.obj
 
-@rem rmdir build\*
+@if %ERRORLEVEL% GTR 0 goto :eof
 
-@rem include openssl headers
-@rem set INCLUDE=%INCLUDE%;c:\tools\openssl\openssl-1.0.0l\inc32;
+cl.exe ^
+/nologo ^
+/Ic:\tools\openssl\openssl-1.0.0l\inc32 ^
+/MT ^
+/Ox ^
+/O2 ^
+/Ob2 ^
+/W3 ^
+/WX ^
+/Gs0 ^
+/GF ^
+/Gy ^
+/Fobuild_openssl\ ^
+/DUSE_OPENSSL ^
+/DWIN32_LEAN_AND_MEAN ^
+/D_CRT_SECURE_NO_DEPRECATE ^
+-c ^
+src\common.c src\testhashfuns.c src\testopenssl.c
 
-@cl.exe ^
- /W4 ^
- /Fobuild\ ^
- /O1 ^
- /DUSE_OPENSSL ^
- src\common.c src\testhashfuns.c src\testopenssl.c ^
- /link advapi32.lib user32.lib gdi32.lib c:\tools\openssl\openssl-1.0.0l\out32\libeay32.lib ^
- /OUT:testhashfuns_openssl.exe
+@if %ERRORLEVEL% GTR 0 goto :eof
+
+link.exe ^
+/nologo ^
+/opt:ref ^
+advapi32.lib user32.lib gdi32.lib c:\tools\openssl\openssl-1.0.0l\out32\libeay32.lib ^
+/OUT:testhashfuns_openssl.exe ^
+build_openssl\common.obj build_openssl\testhashfuns.obj build_openssl\testopenssl.obj
