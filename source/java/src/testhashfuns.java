@@ -21,7 +21,6 @@ public class testhashfuns
         int    warmupcount = Integer.parseInt(args[1]);
         String algo        = args[2];
         String filename    = args[3];
-
         digest(algo, filename, repeatcount, warmupcount);
     }
 
@@ -67,14 +66,20 @@ public class testhashfuns
     static byte[] readfile(String filename) throws IOException
     {
         FileInputStream fin = null;
-
+        long filesize = new File(filename).length();
+        if (filesize > Integer.MAX_VALUE) throw new IOException("too big file");
         try {
             fin = new FileInputStream(filename);
+            byte[] buf = new byte[(int)filesize];
+            fin.read(buf, 0, buf.length);
+            /* read whole file at once instead, saves memory
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             byte[] buf = new byte[1024];
             int n = -1;
             while ((n = fin.read(buf)) != -1) baos.write(buf, 0, n);
             return baos.toByteArray();
+            */
+            return buf;
         } finally {
             if (fin != null) fin.close();
         }

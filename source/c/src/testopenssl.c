@@ -5,7 +5,10 @@
  * http://www.openssl.org/
  */
 
+#ifdef _WIN32
 #include <crtdefs.h>
+#endif
+
 #include <openssl/evp.h>
 #include <stdio.h>
 #include <time.h>

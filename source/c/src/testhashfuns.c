@@ -5,7 +5,10 @@
  ============================================================================
  */
 
+#ifdef _WIN32
 #include <crtdefs.h>
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

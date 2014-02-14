@@ -1,25 +1,32 @@
+#!/usr/bin/python
+
 import sys, os, os.path, subprocess, platform
+
+IS_WINDOWS = platform.system().lower().startswith('win')
 
 BASEDIR = os.path.dirname(os.path.realpath(__file__))
 DATADIR = os.path.join(BASEDIR,'data')
 SRCDIR  = os.path.join(BASEDIR,'source')
 
-JAVA_CMD   = 'c:/tools/jdk/jdk1.7.0_25/bin/java.exe'
-PYTHON_CMD = 'c:/tools/python/Python275/python.exe'
-PERL_CMD   = 'c:/tools/perl/strawberry/perl/bin/perl.exe'
-RUBY_CMD   = 'c:/tools/ruby/ruby-2.0.0-p353-i386-mingw32/bin/ruby.exe'
+JAVA_CMD   = 'c:/tools/jdk/jdk1.7.0_25/bin/java.exe' if IS_WINDOWS else 'java'
+PYTHON_CMD = 'c:/tools/python/Python275/python.exe' if IS_WINDOWS else 'python'
+PERL_CMD   = 'c:/tools/perl/strawberry/perl/bin/perl.exe' if IS_WINDOWS else 'perl'
+RUBY_CMD   = 'c:/tools/ruby/ruby-2.0.0-p353-i386-mingw32/bin/ruby.exe' if IS_WINDOWS else 'ruby'
 
 REPEAT_COUNT    = '10'
-WARMPUP_COUNT   = '2'
+WARMPUP_COUNT   = '5'
 
 HASH_ALGORITHMS = ('md5', 'sha1', 'sha256', 'sha512')
 
 DATAFILES       = filter(lambda x: x.endswith('.dat'), os.listdir(DATADIR))
+#DATAFILES       = ['0002mb.dat']
+
+
 
 #----------------------
 def platform_info():
     info={}
-    if platform.system().lower().startswith('win'): # windows use wmic
+    if IS_WINDOWS: # windows use wmic
 
         cpuinfo=dict(x.split('=',1) for x in subprocess.check_output(
             'wmic cpu get name,caption,numberofcores /format:value'.split()).
@@ -36,10 +43,12 @@ def platform_info():
         info['os']=osinfo['Caption'] + osinfo['OSArchitecture']
         info['ram']=osinfo['TotalVisibleMemorySize']
 
-    print '##',info['os']
-    print '##',info['processor']
-    print '##',info['cpu']+', #cores',info['cores']
-    print '##','RAM',info['ram'],'bytes'
+        print '##',info['os']
+        print '##',info['processor']
+        print '##',info['cpu']+', #cores',info['cores']
+        print '##','RAM',info['ram'],'bytes'
+    else:   # linux
+        pass
 
 #----------------------
 def runtest(**kwargs):
@@ -53,10 +62,15 @@ def runtest(**kwargs):
                 print e.cmd, e.output
 
 #----------------------
+#java -server -XX:+UseG1GC -Xms$heapsize -Xmx$heapsize -XX:MaxGCPauseMillis=500 \
+#-cp source/java/build/ testhashfuns $repeatcount $warmupcount sha512 data/0004mb.dat
+
 def runjava(java_cmd, repeat_count, warmpup_count):
     def getargs(algo, datafile):
         return [ java_cmd,
-                 '-server', '-Xms512M', '-Xmx512M', # server vm with 512 mb
+                 '-server', 
+                 '-XX:+UseG1GC', '-XX:MaxGCPauseMillis=500',
+                 '-Xms1152M', '-Xmx1152M',
                  '-cp', SRCDIR + '/java/build',
                  'testhashfuns',
                  repeat_count,
@@ -103,6 +117,18 @@ def runwincrypto(cwin_cmd, repeat_count, warmpup_count):
                ]
 
     runtest(prefix='c_wincrypto', getargs=getargs)
+
+#----------------------
+def runopenssl(cmd, repeat_count, warmpup_count):
+    def getargs(algo, datafile):
+        return [ cmd,
+                 repeat_count,
+                 warmpup_count,
+                 algo,
+                 os.path.join(DATADIR,datafile)
+               ]
+
+    runtest(prefix='c_openssl', getargs=getargs)
 
 #----------------------
 def runperl(perl_cmd, repeat_count, warmpup_count):
@@ -222,15 +248,18 @@ def plot(data):
 #----------------------
 def main():
     platform_info()
-    cs_exe = 'source/c#/testhashfuns_cs.exe'
-    c_wincrypto_exe = 'source/c/testhashfuns_win32crypto.exe'
 
-    runjava     (JAVA_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
-    runpython   (PYTHON_CMD     , REPEAT_COUNT, WARMPUP_COUNT)
-    runcsharp   (cs_exe         , REPEAT_COUNT, WARMPUP_COUNT)
-    runwincrypto(c_wincrypto_exe, REPEAT_COUNT, WARMPUP_COUNT)
-    runperl     (PERL_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
-    runruby     (RUBY_CMD       , REPEAT_COUNT, WARMPUP_COUNT)
+    runjava  (JAVA_CMD  , REPEAT_COUNT, WARMPUP_COUNT)
+    runpython(PYTHON_CMD, REPEAT_COUNT, WARMPUP_COUNT)
+    runperl  (PERL_CMD  , REPEAT_COUNT, WARMPUP_COUNT)
+    runruby  (RUBY_CMD  , REPEAT_COUNT, WARMPUP_COUNT)
+    runopenssl('source/c/testhashfuns_openssl', REPEAT_COUNT, WARMPUP_COUNT)
+
+    if IS_WINDOWS:    
+        cs_exe          = 'source/c#/testhashfuns_cs.exe'
+        c_wincrypto_exe = 'source/c/testhashfuns_win32crypto.exe'
+        runcsharp   (cs_exe         , REPEAT_COUNT, WARMPUP_COUNT)
+        runwincrypto(c_wincrypto_exe, REPEAT_COUNT, WARMPUP_COUNT)
 
 #----------------------
 # MAIN

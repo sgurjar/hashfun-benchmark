@@ -1,1 +1,1 @@
-javac -d build src\testhashfuns.java 
+javac -d build src/testhashfuns.java 
